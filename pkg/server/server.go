@@ -23,6 +23,7 @@ type Request struct {
 	QueryParams url.Values
 	PathParams map[string]string
 	Headers map[string]string
+	Body []byte
 }
 
 func NewServer(addr string) *Server  {
@@ -103,7 +104,8 @@ func (s *Server) handle(conn net.Conn) {
 	  	}
 
 	  	req.Headers = mp
-		
+		req.Body=data[headerLineEnd+4:]
+
 		requestLine := string(data[:requestLineEnd])
 		parts := strings.Split(requestLine, " ")
 
