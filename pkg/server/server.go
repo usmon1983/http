@@ -1,6 +1,7 @@
 package server
 
 import (
+	"net/url"
 	"strings"
 	"bytes"
 	"io"
@@ -9,12 +10,17 @@ import (
 	"net"
 )
 
-type HandlerFunc func (conn net.Conn)
+type HandlerFunc func (req *Request)
 
 type Server struct {
 	addr string
 	mu sync.RWMutex
 	handlers map[string]HandlerFunc
+}
+
+type Request struct {
+	Conn net.Conn
+	QueryParams url.Values
 }
 
 func NewServer(addr string) *Server  {
@@ -56,58 +62,66 @@ func (s *Server) Start() error  {
 	}
 }
 
-func (s *Server) handle(conn net.Conn) (err error) {
-	defer func() {
-		if cerr := conn.Close(); cerr != nil {
-			if err == nil {
-				err = cerr
-				return
+func (s *Server) handle(conn net.Conn) {
+	defer conn.Close()
+
+	buf := make([]byte, (1024 * 8))
+	for {
+		n, err := conn.Read(buf)
+		if err == io.EOF {
+			log.Printf("%s", buf[:n])
+		}
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		var req Request
+		data := buf[:n]
+		requestLineDelim := []byte{'\r', '\n'}
+		requestLineEnd := bytes.Index(data, requestLineDelim)
+		if requestLineEnd == -1 {
+			log.Printf("Bad Request")
+			return
+		}
+
+		requestLine := string(data[:requestLineEnd])
+		parts := strings.Split(requestLine, " ")
+
+		if len(parts) != 3 {
+			return
+		}
+		path, version := parts[1], parts[2]
+		if version != "HTTP/1.1" {
+			return
+		}
+
+		decode, err := url.PathUnescape(path)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		uri, err := url.ParseRequestURI(decode)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		
+		req.Conn = conn
+		req.QueryParams = uri.Query()
+		
+		var handler = func(req *Request) { conn.Close() }
+
+		s.mu.RLock()
+		for i := 0; i < len(s.handlers); i++ {
+			if hr, found := s.handlers[uri.Path]; found {
+				handler = hr
+				break
 			}
-			log.Print(err)
 		}
-	}()
+		s.mu.RUnlock()
 
-	buf := make([]byte, 4096)
-	n, err := conn.Read(buf)
-	if err == io.EOF {
-		log.Printf("%s", buf[:n])
-		return nil
+		handler(&req)
 	}
-	if err != nil {
-			return err
-	}
-
-	data := buf[:n]
-	requestLineDelim := []byte{'\r', '\n'}
-	requestLineEnd := bytes.Index(data, requestLineDelim)
-	if requestLineEnd == -1 {
-		log.Printf("%s", buf[:n])
-	}
-
-	requestLine := string(data[:requestLineEnd])
-	parts := strings.Split(requestLine, " ")
-	if len(parts) != 3 {
-		return err
-	}
-
-	path, version := parts[1], parts[2]
-
-	if version != "HTTP/1.1" {
-		return err
-	}
-
-	var handler = func(conn net.Conn) {
-		conn.Close()
-	}
-	s.mu.RLock()
-	for i := 0; i < len(s.handlers); i++ {
-		if hr, find := s.handlers[path]; find {
-			handler = hr
-			break
-		}
-	}
-	s.mu.RUnlock()
-	handler(conn)
-
-	return nil
 }
