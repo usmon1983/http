@@ -22,6 +22,7 @@ type Request struct {
 	Conn net.Conn
 	QueryParams url.Values
 	PathParams map[string]string
+	Headers map[string]string
 }
 
 func NewServer(addr string) *Server  {
@@ -85,7 +86,24 @@ func (s *Server) handle(conn net.Conn) {
 			log.Printf("Bad Request")
 			return
 		}
+		
+		headerLineDelim := []byte{'\r', '\n', '\r', '\n'}
+		headerLineEnd := bytes.Index(data, headerLineDelim)
+		if headerLineEnd == -1 {
+			log.Printf("Bad Request")
+			return
+		}
+		headersLine := string(data[requestLineEnd:headerLineEnd])
+	  	headers := strings.Split(headersLine, "\r\n")[1:]
 
+	  	mp := make(map[string]string)
+	  	for _, v := range headers {
+			headerLine := strings.Split(v, ": ")
+			mp[headerLine[0]] = headerLine[1]
+	  	}
+
+	  	req.Headers = mp
+		
 		requestLine := string(data[:requestLineEnd])
 		parts := strings.Split(requestLine, " ")
 
@@ -127,7 +145,6 @@ func (s *Server) handle(conn net.Conn) {
 			req.PathParams = pathParam
 			handler = hr
 		  }
-		  log.Print(req.PathParams)
 		s.mu.RUnlock()
 
 		handler(&req)

@@ -26,5 +26,9 @@ func execute(host string, port string) (err error)  {
 		id := req.PathParams["id"]
 		log.Print(id)
 	})
+	srv.Register("/payments/{id}", func (req *server.Request)  {
+		id := req.Headers["id"]
+		log.Print(id)
+	})
 	return srv.Start()
 }
