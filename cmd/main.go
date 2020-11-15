@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/usmon1983/http/pkg/server"
-	"log"
+	"net/http"
+	"github.com/usmon1983/http/pkg/banners"
+	"github.com/usmon1983/http/cmd/app"
 	"net"
 	"os"
 )
@@ -16,19 +17,15 @@ func main() {
 	}
 }
 
-func execute(host string, port string) (err error)  {
-	srv := server.NewServer(net.JoinHostPort(host, port))
-	srv.Register("/", func (req *server.Request)  {
-		id := req.QueryParams["id"]
-		log.Println(id)
-	})
-	srv.Register("/payments/{id}", func (req *server.Request)  {
-		id := req.PathParams["id"]
-		log.Print(id)
-	})
-	srv.Register("/payments/{id}", func (req *server.Request)  {
-		id := req.Headers["id"]
-		log.Print(id)
-	})
-	return srv.Start()
+func execute(host string, port string) (err error) {
+	mux := http.NewServeMux()
+	bannersSvc := banners.NewService()
+	server := app.NewServer(mux, bannersSvc)
+	
+	server.Init()
+	srv := &http.Server{
+		Addr: net.JoinHostPort(host, port),
+		Handler: server,
+	}
+	return srv.ListenAndServe()
 }
