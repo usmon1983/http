@@ -1,12 +1,12 @@
 package banners
 
 import (
+	"io/ioutil"
+	"fmt"
 	"mime/multipart"
-	"log"
 	"errors"
 	"sync"
 	"context"
-	
 )
 
 //Service представляет собой сервис по управлению баннерами.
@@ -55,10 +55,17 @@ var BannerID int64 = 0
 func (s *Service) Save(ctx context.Context, item *Banner, file multipart.File) (*Banner, error)  {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	log.Print("ddddd")
+
 	if item.ID == 0 {
 		BannerID++
 		item.ID = BannerID
+		if item.Image != "" {
+			item.Image = fmt.Sprint(item.ID) + "." + item.Image
+			err := uploadFile(file, "./web/banners/"+item.Image)
+			if err != nil {
+				return nil, err
+			}
+		}
 		s.items = append(s.items, item)
 		return item, nil
 	}
@@ -84,4 +91,18 @@ func (s *Service) RemoveByID(ctx context.Context, id int64) (*Banner, error)  {
 	}
 
 	return nil, errors.New("item not found")
+}
+
+func uploadFile(file multipart.File, path string) error {
+	var data, err = ioutil.ReadAll(file)
+	if err != nil {
+		return errors.New("not readble data")
+	}
+
+	err = ioutil.WriteFile(path, data, 0666)
+	if err != nil {
+		return errors.New("not saved from folder ")
+	}
+
+	return nil
 }
