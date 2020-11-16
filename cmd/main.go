@@ -40,13 +40,12 @@ func execute(host string, port string) (err error) {
 			if err != nil {
 				log.Print(err)
 			}
-			log.Print("%s", body)
+			log.Print(body)
 
 			err = request.ParseMultipartForm(10 * 1024 * 1024) //10Mb
 			if err != nil {
 				log.Print(err)
 			}
-			
 			//доступно только после ParseForm (либо FormValue, PostFormValue)
 			//log.Print(request.Form)
 			//log.Print(request.PostForm)
