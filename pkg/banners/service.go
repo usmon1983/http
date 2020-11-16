@@ -73,6 +73,15 @@ func (s *Service) Save(ctx context.Context, item *Banner, file multipart.File) (
 	}
 	for k, v := range s.items {
 		if v.ID == item.ID {
+			if item.Image != "" {
+				item.Image = fmt.Sprint(item.ID) + "." + item.Image
+				err := uploadFile(file, "./web/banners/"+item.Image)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				item.Image = s.items[k].Image
+			}
 			s.items[k] = item
 			return item, nil
 		}
