@@ -2,7 +2,6 @@ package app
 
 import (
 	"strings"
-	"fmt"
 	"encoding/json"
 	"log"
 	"strconv"
@@ -71,7 +70,7 @@ func (s *Server) handleGetBannerByID(writer http.ResponseWriter, request *http.R
 		http.Error(writer, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	fmt.Print(item)
+
 	data, err := json.Marshal(item)
 	if err != nil {
 		log.Print(err)

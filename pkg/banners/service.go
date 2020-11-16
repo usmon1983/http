@@ -50,7 +50,7 @@ func (s *Service) ByID(ctx context.Context, id int64) (*Banner, error)  {
 	return nil, errors.New("item not found")
 }
 
-var BannerID int64 = 0
+var BannerID int64 = 1
 //Save сохраняет/обновляет баннер.
 func (s *Service) Save(ctx context.Context, item *Banner, file multipart.File) (*Banner, error)  {
 	s.mu.RLock()
