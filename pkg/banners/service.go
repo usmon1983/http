@@ -30,6 +30,8 @@ type Banner struct {
 	Image string
 }
 
+var BannerID int64 = 0
+
 //All возвращает все существующие баннеры.
 func (s *Service) All(ctx context.Context) ([]*Banner, error)  {
 	s.mu.RLock()
@@ -50,7 +52,7 @@ func (s *Service) ByID(ctx context.Context, id int64) (*Banner, error)  {
 	return nil, errors.New("item not found")
 }
 
-var BannerID int64 = 1
+
 //Save сохраняет/обновляет баннер.
 func (s *Service) Save(ctx context.Context, item *Banner, file multipart.File) (*Banner, error)  {
 	s.mu.RLock()
