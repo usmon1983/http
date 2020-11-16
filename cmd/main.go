@@ -25,7 +25,7 @@ func execute(host string, port string) (err error) {
 	server.Init()
 	srv := &http.Server{
 		Addr: net.JoinHostPort(host, port),
-		Handler: http.HandlerFunc(func (writer http.ResponseWriter, request *http.Request)  {
+		Handler: server,//http.HandlerFunc(func (writer http.ResponseWriter, request *http.Request)  {
 			/*body, err := ioutil.ReadAll(request.Body) //тело запроса
 			if err != nil {
 				log.Print(err)
@@ -36,7 +36,6 @@ func execute(host string, port string) (err error) {
 			if err != nil {
 				log.Print(err)
 			}*/
-		}),
 	}
 	return srv.ListenAndServe()
 }
